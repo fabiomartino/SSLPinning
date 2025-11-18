@@ -7,12 +7,12 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -26,10 +26,16 @@ public class SSLCertificateChecker extends Plugin {
     @PluginMethod
     public void checkCertificate(PluginCall call) {
         String url = call.getString("url");
-        String expectedFingerprint = call.getString("fingerprint").replace(":", "");
-        
-        if (url == null || expectedFingerprint == null) {
-            call.reject("URL and fingerprint are required");
+        List<String> expectedFingerprints;
+        try {
+            expectedFingerprints = call.getArray("fingerprints").toList();
+        } catch (Exception e) {
+            call.reject("Fingerprints must be an array of strings");
+            return;
+        }
+
+        if (url == null || expectedFingerprints == null || expectedFingerprints.isEmpty()) {
+            call.reject("URL and fingerprints are required");
             return;
         }
 
@@ -42,7 +48,15 @@ public class SSLCertificateChecker extends Plugin {
         try {
             Certificate cert = getCertificate(url);
             String actualFingerprint = getFingerprint(cert);
-            
+            boolean fingerprintMatched = false;
+
+            for (String expectedFingerprint : expectedFingerprints) {
+                if (expectedFingerprint.replace(":", "").equalsIgnoreCase(actualFingerprint)) {
+                    fingerprintMatched = true;
+                    break;
+                }
+            }
+
             JSObject result = new JSObject();
             if (cert instanceof X509Certificate) {
                 X509Certificate x509cert = (X509Certificate) cert;
@@ -53,8 +67,8 @@ public class SSLCertificateChecker extends Plugin {
                 // Normalize actualFingerprint by adding colons
                 String normalizedFingerprint = normalizeFingerprint(actualFingerprint);
                 result.put("actualFingerprint", normalizedFingerprint);
-                result.put("expectedFingerprint", call.getString("fingerprint"));
-                result.put("fingerprintMatched", expectedFingerprint.equalsIgnoreCase(actualFingerprint));
+                result.put("expectedFingerprints", call.getArray("fingerprints"));
+                result.put("fingerprintMatched", fingerprintMatched);
             }
             call.resolve(result);
         } catch (Exception e) {
@@ -80,9 +94,13 @@ public class SSLCertificateChecker extends Plugin {
 
         TrustManager[] trustManagers = new TrustManager[] {
             new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() { return null; }
-                public void checkClientTrusted(X509Certificate[] certs, String authType) throws CertificateException { }
-                public void checkServerTrusted(X509Certificate[] certs, String authType) throws CertificateException { 
+                public X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                public void checkClientTrusted(X509Certificate[] certs, String authType) throws CertificateException {}
+
+                public void checkServerTrusted(X509Certificate[] certs, String authType) throws CertificateException {
                     if (certs == null || certs.length == 0) {
                         throw new CertificateException("No certificate found");
                     }

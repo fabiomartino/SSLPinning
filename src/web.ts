@@ -9,7 +9,7 @@
 import { CapacitorException, ExceptionCode, WebPlugin } from '@capacitor/core';
 
 import type { SSLCertificateCheckerPlugin } from './definitions';
-import type { SSLCertificateCheckerResult } from './types';
+import type { SSLCertificateCheckerOptions, SSLCertificateCheckerResult } from './types';
 
 /**
  * Web implementation of the SSLCertificateCheckerPlugin interface.
@@ -18,10 +18,7 @@ import type { SSLCertificateCheckerResult } from './types';
  * checking is unsupported. It implements the methods defined by the SSLCertificateCheckerPlugin
  * interface but returns standardized error responses to indicate the lack of functionality in web contexts.
  */
-export class SSLCertificateCheckerWeb
-  extends WebPlugin
-  implements SSLCertificateCheckerPlugin
-{
+export class SSLCertificateCheckerWeb extends WebPlugin implements SSLCertificateCheckerPlugin {
   /**
    * Checks the SSL certificate for a given URL.
    *
@@ -36,7 +33,7 @@ export class SSLCertificateCheckerWeb
    *
    * @throws {CapacitorException} Always throws an exception with code `Unimplemented`.
    */
-  async checkCertificate(options: { url: string }): Promise<SSLCertificateCheckerResult> {
+  async checkCertificate(options: SSLCertificateCheckerOptions): Promise<SSLCertificateCheckerResult> {
     // Ensure the parameter is used to comply with linting rules.
     options;
 

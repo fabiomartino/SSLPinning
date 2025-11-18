@@ -17,20 +17,20 @@ import Security
  */
 class SSLCertificateChecker {
     /**
-     * Validates the SSL certificate of a given URL against an expected fingerprint.
+     * Validates the SSL certificate of a given URL against an array of expected fingerprints.
      *
      * - Parameters:
      *   - urlString: The URL of the server whose SSL certificate needs to be validated.
-     *   - expectedFingerprint: The expected SHA-256 fingerprint of the SSL certificate.
+     *   - expectedFingerprints: An array of expected SHA-256 fingerprints of the SSL certificate.
      * - Returns: A dictionary containing the validation result:
-     *   - `expectedFingerprint`: The expected fingerprint provided for validation.
+     *   - `expectedFingerprints`: The array of expected fingerprints provided for validation.
      *   - `actualFingerprint`: The actual fingerprint of the certificate obtained from the server.
-     *   - `fingerprintMatched`: A Boolean indicating whether the fingerprints matched.
+     *   - `fingerprintMatched`: A Boolean indicating whether any of the provided fingerprints matched.
      *   - `subject`: The subject of the certificate (derived from the URL).
      *   - `issuer`: The issuer of the certificate.
      *   - `error`: An error message, if the validation fails.
      */
-    func checkCertificate(_ urlString: String, expectedFingerprint: String) -> [String: Any] {
+    func checkCertificate(_ urlString: String, expectedFingerprints: [String]) -> [String: Any] {
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return ["error": "Invalid URL"]
@@ -44,9 +44,9 @@ class SSLCertificateChecker {
         var result: [String: Any] = [:]
 
         // Create a custom session with the CertificateCheckDelegate.
-        let session = URLSession(configuration: .ephemeral, delegate: CertificateCheckDelegate(expectedFingerprint: expectedFingerprint) { isValid, actualFingerprint, issuer in
+        let session = URLSession(configuration: .ephemeral, delegate: CertificateCheckDelegate(expectedFingerprints: expectedFingerprints) { isValid, actualFingerprint, issuer in
             result = [
-                "expectedFingerprint": expectedFingerprint.uppercased(),
+                "expectedFingerprints": expectedFingerprints.map { $0.uppercased() },
                 "actualFingerprint": actualFingerprint.uppercased(),
                 "fingerprintMatched": isValid,
                 "subject": urlString.replacingOccurrences(of: "https://", with: ""),
@@ -71,18 +71,18 @@ class SSLCertificateChecker {
  * It validates the certificate fingerprint against an expected value.
  */
 class CertificateCheckDelegate: NSObject, URLSessionDelegate {
-    private let expectedFingerprint: String
+    private let expectedFingerprints: [String]
     private let completion: (Bool, String, String) -> Void
 
     /**
-     * Initializes the delegate with the expected fingerprint and a completion handler.
+     * Initializes the delegate with the expected fingerprints and a completion handler.
      *
      * - Parameters:
-     *   - expectedFingerprint: The expected SHA-256 fingerprint of the SSL certificate.
+     *   - expectedFingerprints: An array of expected SHA-256 fingerprints of the SSL certificate.
      *   - completion: A closure that returns the validation result, the actual fingerprint, and the issuer.
      */
-    init(expectedFingerprint: String, completion: @escaping (Bool, String, String) -> Void) {
-        self.expectedFingerprint = expectedFingerprint
+    init(expectedFingerprints: [String], completion: @escaping (Bool, String, String) -> Void) {
+        self.expectedFingerprints = expectedFingerprints
         self.completion = completion
     }
 
@@ -105,9 +105,10 @@ class CertificateCheckDelegate: NSObject, URLSessionDelegate {
         let actualFingerprint = certificateFingerprint(certificate)
         let issuer = certificateIssuer(certificate)
         print("Actual Fingerprint: \(actualFingerprint)")
-        print("Expected fingerprint: \(expectedFingerprint)")
+        print("Expected fingerprints: \(expectedFingerprints)")
         print("Issuer: \(issuer)")
-        let isValid = actualFingerprint.lowercased() == expectedFingerprint.lowercased()
+
+        let isValid = expectedFingerprints.contains(where: { $0.lowercased() == actualFingerprint.lowercased() })
 
         completion(isValid, actualFingerprint, issuer)
 

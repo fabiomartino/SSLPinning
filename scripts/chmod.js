@@ -14,4 +14,4 @@ try {
 } catch (error) {
   // Don't fail the install if we can't set permissions
   console.warn('Warning: Could not set CLI tool permissions:', error.message);
-} 
+}

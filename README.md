@@ -214,10 +214,10 @@ export type SSLCertificateCheckerResult = {
    */
   validTo?: string;
   /**
-   * The fingerprint that is expected to match the certificate's actual fingerprint.
+   * The fingerprints that are expected to match the certificate's actual fingerprint.
    * This is typically provided in the SSLCertificateCheckerOptions.
    */
-  expectedFingerprint?: string;
+  expectedFingerprints?: string[];
   /**
    * The actual fingerprint of the SSL certificate retrieved from the server.
    * Example: "50:4B:A1:B5:48:96:71:F3:9F:87:7E:0A:09:FD:3E:1B:C0:4F:AA:9F:FC:83:3E:A9:3A:00:78:88:F8:BA:60:26"
@@ -246,10 +246,10 @@ export type SSLCertificateCheckerOptions = {
    */
   url: string;
   /**
-   * The expected fingerprint of the SSL certificate to validate against.
-   * This is typically a hash string such as SHA-256.
+   * The expected fingerprints of the SSL certificate to validate against.
+   * This is typically an array of hash strings such as SHA-256.
    */
-  fingerprint: string;
+  fingerprints: string[];
 };
 ```
 
@@ -260,8 +260,10 @@ Example:
 ```typescript
 SSLCertificateChecker.checkCertificate({
   url: 'https://example.com', // Replace with your server URL
-  fingerprint:
+  fingerprints: [
     '50:4B:A1:B5:48:96:71:F3:9F:87:7E:0A:09:FD:3E:1B:C0:4F:AA:9F:FC:83:3E:A9:3A:00:78:88:F8:BA:60:26', // Replace with your server fingerprint
+    'ANOTHER:FINGERPRINT:HERE:IF:NEEDED:FOR:ROTATION:OR:MULTIPLE:SERVERS'
+  ],
 }).then(res => {
   console.log(res.fingerprintMatched);
 });

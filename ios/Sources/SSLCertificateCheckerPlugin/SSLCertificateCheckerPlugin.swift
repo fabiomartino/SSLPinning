@@ -68,15 +68,15 @@ public class SSLCertificateCheckerPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func checkCertificate(_ call: CAPPluginCall) {
         // Retrieve the `url` and `fingerprint` parameters from the method call.
         guard let url = call.getString("url"),
-              let fingerprint = call.getString("fingerprint") else {
+              let fingerprints = call.getArray("fingerprints", String.self) else {
             // Reject the call if the required parameters are not provided.
-            call.reject("Must provide url and fingerprint")
+            call.reject("Must provide url and fingerprints (array of strings)")
             return
         }
-        
+
         // Perform the SSL certificate check using the implementation class.
-        let result = implementation.checkCertificate(url, expectedFingerprint: fingerprint)
-        
+        let result = implementation.checkCertificate(url, expectedFingerprints: fingerprints)
+
         // Resolve the call with the validation result.
         call.resolve(result)
     }

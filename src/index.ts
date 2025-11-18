@@ -15,17 +15,14 @@ import type { SSLCertificateCheckerPlugin } from './definitions';
  * - The first argument is the plugin's name as used in native platforms.
  * - The second argument is an optional configuration object, where a web implementation is dynamically imported.
  */
-const SSLCertificateChecker = registerPlugin<SSLCertificateCheckerPlugin>(
-  'SSLCertificateChecker',
-  {
-    /**
-     * Provide a web implementation of the `SSLCertificateChecker` plugin.
-     * The implementation is dynamically imported to optimize performance.
-     * @returns A promise that resolves to an instance of `SSLCertificateCheckerWeb`.
-     */
-    web: () => import('./web').then((m) => new m.SSLCertificateCheckerWeb()),
-  },
-);
+const SSLCertificateChecker = registerPlugin<SSLCertificateCheckerPlugin>('SSLCertificateChecker', {
+  /**
+   * Provide a web implementation of the `SSLCertificateChecker` plugin.
+   * The implementation is dynamically imported to optimize performance.
+   * @returns A promise that resolves to an instance of `SSLCertificateCheckerWeb`.
+   */
+  web: () => import('./web').then((m) => new m.SSLCertificateCheckerWeb()),
+});
 
 /**
  * Re-export everything from the `definitions` file.

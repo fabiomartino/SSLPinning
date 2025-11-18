@@ -23,7 +23,7 @@ import Capacitor
 func log(_ items: Any..., separator: String = " ", terminator: String = "\n") {
     // Prefix the log with "⚡️  SSLCertificateChecker -"
     CAPLog.print("⚡️  SSLCertificateChecker -", terminator: separator)
-    
+
     // Iterate over the provided items and print each one
     for (itemIndex, item) in items.enumerated() {
         // Use the specified separator between items, and the terminator for the final item

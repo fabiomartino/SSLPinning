@@ -1,4 +1,3 @@
-
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import https from 'https';
@@ -76,19 +75,18 @@ async function main() {
       description: 'Output format',
     })
     .demandCommand(1, 'At least one domain is required')
-    .help()
-    .argv;
+    .help().argv;
 
   const domains = argv._ as string[];
   const results: CertificateInfo[] = [];
-  
+
   console.log('Fetching certificates...\n');
 
   for (const domain of domains) {
     try {
       const certInfo = await getCertificate(domain);
       results.push(certInfo);
-      
+
       // Always print to console
       console.log(`Domain: ${certInfo.domain}`);
       console.log(`Subject: ${certInfo.subject.CN}`);
@@ -104,14 +102,19 @@ async function main() {
   }
 
   if (argv.out) {
-    const output = argv.format === 'fingerprints' 
-      ? `export const fingerprints = ${JSON.stringify(results.map(r => r.fingerprint), null, 2)};`
-      : JSON.stringify(results, null, 2);
-    
+    const output =
+      argv.format === 'fingerprints'
+        ? `export const fingerprints = ${JSON.stringify(
+            results.map((r) => r.fingerprint),
+            null,
+            2,
+          )};`
+        : JSON.stringify(results, null, 2);
+
     await fs.writeFile(argv.out, output);
     console.log(`Results written to ${argv.out}`);
   }
   process.exit(0);
 }
 
-main().catch(console.error); 
+main().catch(console.error);
