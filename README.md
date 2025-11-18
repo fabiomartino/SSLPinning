@@ -214,6 +214,12 @@ export type SSLCertificateCheckerResult = {
    */
   validTo?: string;
   /**
+   * The fingerprint that is expected to match the certificate's actual fingerprint.
+   * This is typically provided in the SSLCertificateCheckerOptions.
+   * @deprecated Use `expectedFingerprints` instead.
+   */
+  expectedFingerprint?: string;
+  /**
    * The fingerprints that are expected to match the certificate's actual fingerprint.
    * This is typically provided in the SSLCertificateCheckerOptions.
    */
@@ -246,10 +252,16 @@ export type SSLCertificateCheckerOptions = {
    */
   url: string;
   /**
+   * The expected fingerprint of the SSL certificate to validate against.
+   * This is typically a hash string such as SHA-256.
+   * @deprecated Use `fingerprints` instead.
+   */
+  fingerprint?: string;
+  /**
    * The expected fingerprints of the SSL certificate to validate against.
    * This is typically an array of hash strings such as SHA-256.
    */
-  fingerprints: string[];
+  fingerprints?: string[];
 };
 ```
 
@@ -258,12 +270,22 @@ export type SSLCertificateCheckerOptions = {
 Example:
 
 ```typescript
+// New API with multiple fingerprints
 SSLCertificateChecker.checkCertificate({
   url: 'https://example.com', // Replace with your server URL
   fingerprints: [
     '50:4B:A1:B5:48:96:71:F3:9F:87:7E:0A:09:FD:3E:1B:C0:4F:AA:9F:FC:83:3E:A9:3A:00:78:88:F8:BA:60:26', // Replace with your server fingerprint
     'ANOTHER:FINGERPRINT:HERE:IF:NEEDED:FOR:ROTATION:OR:MULTIPLE:SERVERS'
   ],
+}).then(res => {
+  console.log(res.fingerprintMatched);
+});
+
+// Old API with single fingerprint (deprecated)
+SSLCertificateChecker.checkCertificate({
+  url: 'https://example.com', // Replace with your server URL
+  fingerprint:
+    '50:4B:A1:B5:48:96:71:F3:9F:87:7E:0A:09:FD:3E:1B:C0:4F:AA:9F:FC:83:3E:A9:3A:00:78:88:F8:BA:60:26', // Replace with your server fingerprint
 }).then(res => {
   console.log(res.fingerprintMatched);
 });
@@ -299,7 +321,8 @@ export class SslPinningInterceptor implements HttpInterceptor {
     return from(
       SSLCertificateChecker.checkCertificate({
         url: environment.baseUrlBase,
-        fingerprint: environment.fingerprint,
+        // Prioritize 'fingerprints' if available, otherwise use 'fingerprint'
+        fingerprints: environment.fingerprints || [environment.fingerprint],
       })
     ).pipe(
       switchMap((res) => {

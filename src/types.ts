@@ -6,10 +6,17 @@ export type SSLCertificateCheckerOptions = {
   url: string;
 
   /**
+   * The expected fingerprint of the SSL certificate to validate against.
+   * This is typically a hash string such as SHA-256.
+   * @deprecated Use `fingerprints` instead.
+   */
+  fingerprint?: string;
+
+  /**
    * The expected fingerprints of the SSL certificate to validate against.
    * This is typically an array of hash strings such as SHA-256.
    */
-  fingerprints: string[];
+  fingerprints?: string[];
 };
 
 export type SSLCertificateCheckerResult = {
@@ -42,6 +49,13 @@ export type SSLCertificateCheckerResult = {
    * Example: "2024-01-01T00:00:00Z"
    */
   validTo?: string;
+
+  /**
+   * The fingerprint that is expected to match the certificate's actual fingerprint.
+   * This is typically provided in the SSLCertificateCheckerOptions.
+   * @deprecated Use `expectedFingerprints` instead.
+   */
+  expectedFingerprint?: string;
 
   /**
    * The fingerprints that are expected to match the certificate's actual fingerprint.

@@ -17,20 +17,22 @@ import Security
  */
 class SSLCertificateChecker {
     /**
-     * Validates the SSL certificate of a given URL against an array of expected fingerprints.
+     * Validates the SSL certificate of a given URL against an expected fingerprint or an array of fingerprints.
      *
      * - Parameters:
      *   - urlString: The URL of the server whose SSL certificate needs to be validated.
+     *   - expectedFingerprint: The expected SHA-256 fingerprint of the SSL certificate (deprecated).
      *   - expectedFingerprints: An array of expected SHA-256 fingerprints of the SSL certificate.
      * - Returns: A dictionary containing the validation result:
-     *   - `expectedFingerprints`: The array of expected fingerprints provided for validation.
+     *   - `expectedFingerprint`: The expected fingerprint provided for validation (if single).
+     *   - `expectedFingerprints`: The array of expected fingerprints provided for validation (if multiple).
      *   - `actualFingerprint`: The actual fingerprint of the certificate obtained from the server.
      *   - `fingerprintMatched`: A Boolean indicating whether any of the provided fingerprints matched.
      *   - `subject`: The subject of the certificate (derived from the URL).
      *   - `issuer`: The issuer of the certificate.
      *   - `error`: An error message, if the validation fails.
      */
-    func checkCertificate(_ urlString: String, expectedFingerprints: [String]) -> [String: Any] {
+    func checkCertificate(_ urlString: String, expectedFingerprint: String? = nil, expectedFingerprints: [String]? = nil) -> [String: Any] {
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             return ["error": "Invalid URL"]
@@ -40,18 +42,31 @@ class SSLCertificateChecker {
             return ["error": "URL is not HTTPS"]
         }
 
+        let fingerprintsToUse: [String]
+        if let multiple = expectedFingerprints, !multiple.isEmpty {
+            fingerprintsToUse = multiple
+        } else if let single = expectedFingerprint {
+            fingerprintsToUse = [single]
+        } else {
+            return ["error": "No fingerprints provided for validation"]
+        }
+
         let semaphore = DispatchSemaphore(value: 0)
         var result: [String: Any] = [:]
 
         // Create a custom session with the CertificateCheckDelegate.
-        let session = URLSession(configuration: .ephemeral, delegate: CertificateCheckDelegate(expectedFingerprints: expectedFingerprints) { isValid, actualFingerprint, issuer in
+        let session = URLSession(configuration: .ephemeral, delegate: CertificateCheckDelegate(expectedFingerprints: fingerprintsToUse) { isValid, actualFingerprint, issuer in
             result = [
-                "expectedFingerprints": expectedFingerprints.map { $0.uppercased() },
                 "actualFingerprint": actualFingerprint.uppercased(),
                 "fingerprintMatched": isValid,
                 "subject": urlString.replacingOccurrences(of: "https://", with: ""),
                 "issuer": issuer
             ]
+            if let multiple = expectedFingerprints, !multiple.isEmpty {
+                result["expectedFingerprints"] = multiple.map { $0.uppercased() }
+            } else if let single = expectedFingerprint {
+                result["expectedFingerprint"] = single.uppercased()
+            }
             semaphore.signal()
         }, delegateQueue: nil)
 
@@ -65,7 +80,6 @@ class SSLCertificateChecker {
         return result
     }
 }
-
 /**
  * A custom URL session delegate that handles SSL certificate validation.
  * It validates the certificate fingerprint against an expected value.

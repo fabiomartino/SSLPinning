@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import java.util.List;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -26,16 +27,22 @@ public class SSLCertificateChecker extends Plugin {
     @PluginMethod
     public void checkCertificate(PluginCall call) {
         String url = call.getString("url");
-        List<String> expectedFingerprints;
+        String singleFingerprint = call.getString("fingerprint");
+        List<String> multipleFingerprints = null;
         try {
-            expectedFingerprints = call.getArray("fingerprints").toList();
+            multipleFingerprints = call.getArray("fingerprints").toList();
         } catch (Exception e) {
-            call.reject("Fingerprints must be an array of strings");
+            // If getArray("fingerprints") fails, it means it's not an array or not present.
+            // We will handle this by checking if singleFingerprint is present.
+        }
+
+        if (url == null) {
+            call.reject("URL is required");
             return;
         }
 
-        if (url == null || expectedFingerprints == null || expectedFingerprints.isEmpty()) {
-            call.reject("URL and fingerprints are required");
+        if ((multipleFingerprints == null || multipleFingerprints.isEmpty()) && singleFingerprint == null) {
+            call.reject("Either 'fingerprint' (string) or 'fingerprints' (array of strings) is required");
             return;
         }
 
@@ -45,12 +52,19 @@ public class SSLCertificateChecker extends Plugin {
             return;
         }
 
+        List<String> fingerprintsToUse;
+        if (multipleFingerprints != null && !multipleFingerprints.isEmpty()) {
+            fingerprintsToUse = multipleFingerprints;
+        } else {
+            fingerprintsToUse = java.util.Collections.singletonList(singleFingerprint);
+        }
+
         try {
             Certificate cert = getCertificate(url);
             String actualFingerprint = getFingerprint(cert);
             boolean fingerprintMatched = false;
 
-            for (String expectedFingerprint : expectedFingerprints) {
+            for (String expectedFingerprint : fingerprintsToUse) {
                 if (expectedFingerprint.replace(":", "").equalsIgnoreCase(actualFingerprint)) {
                     fingerprintMatched = true;
                     break;
@@ -67,7 +81,12 @@ public class SSLCertificateChecker extends Plugin {
                 // Normalize actualFingerprint by adding colons
                 String normalizedFingerprint = normalizeFingerprint(actualFingerprint);
                 result.put("actualFingerprint", normalizedFingerprint);
-                result.put("expectedFingerprints", call.getArray("fingerprints"));
+
+                if (multipleFingerprints != null && !multipleFingerprints.isEmpty()) {
+                    result.put("expectedFingerprints", call.getArray("fingerprints"));
+                } else {
+                    result.put("expectedFingerprint", singleFingerprint);
+                }
                 result.put("fingerprintMatched", fingerprintMatched);
             }
             call.resolve(result);
