@@ -3,14 +3,14 @@ import PackageDescription
 
 let package = Package(
     name: "CapacitorSslPinning",
-    platforms: [.iOS(.v14)],
+    platforms: [.iOS(.v15)],
     products: [
         .library(
             name: "CapacitorSslPinning",
             targets: ["SSLCertificateCheckerPlugin"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", branch: "main")
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0-alpha.3")
     ],
     targets: [
         .target(

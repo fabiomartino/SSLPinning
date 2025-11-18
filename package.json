@@ -1,6 +1,6 @@
 {
   "name": "capacitor-ssl-pinning",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Check/pin SSL certificates",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
@@ -14,6 +14,7 @@
     "ios/Tests",
     "Package.swift",
     "CapacitorSslPinning.podspec",
+    "LICENSE",
     "bin/",
     "scripts/"
   ],
@@ -21,7 +22,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mchl18/Capacitor-SSL-Pinning"
+    "url": "git+https://github.com/mchl18/Capacitor-SSL-Pinning.git"
   },
   "bugs": {
     "url": "https://github.com/mchl18/Capacitor-SSL-Pinning/issues"
@@ -45,7 +46,7 @@
     "lint": "npm run eslint && npm run prettier -- --check && npm run swiftlint -- lint",
     "fmt": "npm run eslint -- --fix && npm run prettier -- --write && npm run swiftlint -- --fix --format",
     "eslint": "eslint . --ext ts",
-    "prettier": "prettier \"**/*.{css,html,ts,js,java}\"",
+    "prettier": "prettier \"**/*.{css,html,ts,js,java}\" --plugin=prettier-plugin-java",
     "swiftlint": "node-swiftlint",
     "docgen": "docgen --api SSLCertificateCheckerPlugin --output-readme README.md --output-json dist/docs.json",
     "build": "npm run clean && npm run docgen && tsc && rollup -c rollup.config.mjs && npm run chmod-cli",
@@ -56,28 +57,28 @@
     "prepublishOnly": "npm run build",
     "debug-build": "tsc --listFiles && npm run build",
     "chmod-cli": "node scripts/chmod.js",
-    "postinstall": "node scripts/chmod.js"
+    "postinstall": "node scripts/chmod.js",
+    "prepare": "npm run build"
   },
   "devDependencies": {
-    "@capacitor/android": "^6.2.0",
-    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^8.0.0-beta.0",
+    "@capacitor/cli": "^8.0.0-beta.0",
+    "@capacitor/core": "^8.0.0-beta.0",
     "@capacitor/docgen": "^0.3.0",
-    "@capacitor/ios": "^6.2.0",
+    "@capacitor/ios": "^8.0.0-beta.0",
     "@ionic/eslint-config": "^0.4.0",
     "@ionic/prettier-config": "^4.0.0",
     "@ionic/swiftlint-config": "^2.0.0",
+    "@types/node": "^24.10.1",
     "@types/yargs": "^17.0.33",
-    "eslint": "^9.17.0",
-    "prettier": "~3.4.2",
-    "prettier-plugin-java": "~2.6.5",
-    "rimraf": "^6.0.1",
-    "rollup": "^4.29.1",
+    "eslint": "^9.39.1",
+    "prettier": "~3.6.2",
+    "prettier-plugin-java": "~2.7.7",
+    "rimraf": "^6.1.0",
+    "rollup": "^4.53.2",
     "swiftlint": "^2.0.0",
-    "typescript": "~5.4.5",
+    "typescript": "~5.9.3",
     "yargs": "^17.7.2"
-  },
-  "peerDependencies": {
-    "@capacitor/core": "^6.2.0"
   },
   "prettier": "@ionic/prettier-config",
   "swiftlint": "@ionic/swiftlint-config",
@@ -95,5 +96,8 @@
   "bin": {
     "ssl-fingerprint": "dist/cli/fingerprint.js",
     "capacitor-ssl-fingerprint": "dist/cli/fingerprint.js"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^7.4.3"
   }
 }

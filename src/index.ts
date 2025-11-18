@@ -23,7 +23,7 @@ const SSLCertificateChecker = registerPlugin<SSLCertificateCheckerPlugin>(
      * The implementation is dynamically imported to optimize performance.
      * @returns A promise that resolves to an instance of `SSLCertificateCheckerWeb`.
      */
-    web: () => import('./web').then(m => new m.SSLCertificateCheckerWeb()),
+    web: () => import('./web').then((m) => new m.SSLCertificateCheckerWeb()),
   },
 );
 
