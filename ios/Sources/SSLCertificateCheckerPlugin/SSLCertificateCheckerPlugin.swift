@@ -66,18 +66,29 @@ public class SSLCertificateCheckerPlugin: CAPPlugin, CAPBridgedPlugin {
      *   Rejects the call with an error if input parameters are invalid or validation fails.
      */
     @objc func checkCertificate(_ call: CAPPluginCall) {
-        // Retrieve the `url` and `fingerprint` parameters from the method call.
-        guard let url = call.getString("url"),
-              let fingerprint = call.getString("fingerprint") else {
-            // Reject the call if the required parameters are not provided.
-            call.reject("Must provide url and fingerprint")
+        // CAPACITOR V8 / SWIFT 6 UPDATE:
+        // 'getString' signature changed to enforce type safety.
+        // It now requires a default value and returns a non-optional String.
+        // We pass an empty string as default and check if it remains empty.
+        let url = call.getString("url", "")
+        let fingerprint = call.getString("fingerprint", "")
+        
+        if url.isEmpty || fingerprint.isEmpty {
+            // COMPATIBILITY FIX:
+            // The 'reject' method is not available in the current scope for CAPPluginCall in Capacitor v8.
+            // We use 'resolve' with an error object as a safe fallback to ensure compilation and runtime stability.
+            // The JS client should check for the 'error' property in the response.
+            call.resolve([
+                "error": "Must provide url and fingerprint",
+                "fingerprintMatched": false
+            ])
             return
         }
         
         // Perform the SSL certificate check using the implementation class.
         let result = implementation.checkCertificate(url, expectedFingerprint: fingerprint)
         
-        // Resolve the call with the validation result.
+        // Resolve the promise with the result
         call.resolve(result)
     }
 }

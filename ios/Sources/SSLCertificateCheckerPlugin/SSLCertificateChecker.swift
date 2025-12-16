@@ -43,7 +43,7 @@ class SSLCertificateChecker {
         let semaphore = DispatchSemaphore(value: 0)
         var result: [String: Any] = [:]
 
-        // Create a custom session with the CertificateCheckDelegate.
+        // Create a custom session to handle the authentication challenge (CertificateCheckDelegate).
         let session = URLSession(configuration: .ephemeral, delegate: CertificateCheckDelegate(expectedFingerprint: expectedFingerprint) { isValid, actualFingerprint, issuer in
             result = [
                 "expectedFingerprint": expectedFingerprint.uppercased(),
@@ -95,15 +95,32 @@ class CertificateCheckDelegate: NSObject, URLSessionDelegate {
      *   - completionHandler: A closure that indicates whether the challenge is accepted or rejected.
      */
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
-        guard let serverTrust = challenge.protectionSpace.serverTrust,
-              let certificate = SecTrustGetCertificateAtIndex(serverTrust, 0) else {
+        guard let serverTrust = challenge.protectionSpace.serverTrust else {
             completion(false, "", "")
             completionHandler(.cancelAuthenticationChallenge, nil)
             return
         }
 
-        let actualFingerprint = certificateFingerprint(certificate)
-        let issuer = certificateIssuer(certificate)
+        var certificate: SecCertificate?
+        
+        // COMPATIBILITY FIX: Handle iOS 15+ deprecation of SecTrustGetCertificateAtIndex
+        if #available(iOS 15.0, *) {
+            if let chain = SecTrustCopyCertificateChain(serverTrust) as? [SecCertificate] {
+                certificate = chain.first
+            }
+        } else {
+            // Fallback for older iOS versions
+            certificate = SecTrustGetCertificateAtIndex(serverTrust, 0)
+        }
+
+        guard let cert = certificate else {
+            completion(false, "", "")
+            completionHandler(.cancelAuthenticationChallenge, nil)
+            return
+        }
+
+        let actualFingerprint = certificateFingerprint(cert)
+        let issuer = certificateIssuer(cert)
         print("Actual Fingerprint: \(actualFingerprint)")
         print("Expected fingerprint: \(expectedFingerprint)")
         print("Issuer: \(issuer)")
@@ -139,11 +156,13 @@ class CertificateCheckDelegate: NSObject, URLSessionDelegate {
      * - Returns: A string representation of the issuer.
      */
     private func certificateIssuer(_ certificate: SecCertificate) -> String {
-        guard let certificateData = SecCertificateCopyData(certificate) as Data? else {
+        // FIX: Replaced unused variable 'certificateData' with '_' to silence compiler warning
+        guard (SecCertificateCopyData(certificate) as Data?) != nil else {
             return "Unknown Issuer"
         }
 
-        guard let subject = SecCertificateCopyNormalizedSubjectSequence(certificate) as Data?,
+        // FIX: Replaced unused variable 'subject' with '_' to silence compiler warning
+        guard (SecCertificateCopyNormalizedSubjectSequence(certificate) as Data?) != nil,
               let issuer = SecCertificateCopyNormalizedIssuerSequence(certificate) as Data? else {
             return "Unknown Issuer"
         }
